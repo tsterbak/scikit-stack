@@ -12,7 +12,7 @@ from time import strptime
 import datetime
 from collections import Counter
 
-from sklearn import preprocessing
+from sklearn import preprocessing, naive_bayes
 from sklearn.neighbors.classification import KNeighborsClassifier
 from sklearn.ensemble.forest import RandomForestClassifier, ExtraTreesClassifier
 from sklearn.ensemble.gradient_boosting import GradientBoostingClassifier
@@ -251,6 +251,7 @@ if __name__ == "__main__":
     clf1 = RandomForestClassifier(n_estimators=100,random_state=571,max_features=8,max_depth=13,n_jobs=1)
     clf2 = KNeighborsClassifier(n_neighbors=250, p=1, weights="distance")
     clf3 = ExtraTreesClassifier(n_estimators=100,max_depth=14, max_features=12,random_state=571,n_jobs=1)
+    clf4 = GaussianNB()
     clf5 = GradientBoostingClassifier(n_estimators=100,random_state=571,max_depth=6, max_features=7)
     
     clf6 = RandomForestClassifier(n_estimators=1000,max_features=8,max_depth=13,n_jobs=1)
