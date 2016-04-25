@@ -8,6 +8,7 @@ from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
 from sklearn.cross_validation import cross_val_predict
 from sklearn.ensemble import VotingClassifier
 from sklearn.grid_search import GridSearchCV
+from sklearn.metrics import log_loss,accuracy_score,mean_squared_error
 
 
 class StackingClassifier(BaseEstimator,ClassifierMixin):
@@ -46,13 +47,18 @@ class StackingClassifier(BaseEstimator,ClassifierMixin):
             
         # fit the first stage models
         for clf in self.stage_one_clfs:
-            y_pred = cross_val_predict(clf, X, y, cv=5, n_jobs=1)
-            clf.fit(X,y)
+            y_pred = cross_val_predict(clf[1], X, y, cv=5, n_jobs=1)
+            clf[1].fit(X,y)
             y_pred  = np.reshape(y_pred,(len(y_pred),1))
             if self.use_append == True:
                 self.__X = np.hstack((self.__X,y_pred))
             elif self.use_append == False:
                 temp.append(y_pred)
+            if self.scoring == "log_loss":
+                score = accuracy_score(self.__y,y_pred)
+            else:
+                score = log_loss(self.__y,y_pred)
+            print("Score of %s: %0.3f" %(clf[0],score))
                 
         if self.use_append == False:
             self.__X = np.array(temp).T[0]
@@ -60,28 +66,21 @@ class StackingClassifier(BaseEstimator,ClassifierMixin):
         # fit the second stage models
         if self.do_gridsearch == False:
             for clf in self.stage_two_clfs:
-                clf.fit(self.__X,self.__y)      
+                clf[1].fit(self.__X,self.__y)      
                 
         ### FOR GRIDSEARCH ###  
         else:
             print("GridSearch")
-            #build paramteres and estimator set
-            estimators = []
-            i = 0
-            for est in self.stage_two_clfs:
-                name = "clf"+str(i)
-                estimators.append((name,est))
-                i += 1
             parameters = {}
             i = 0
-            for pair in estimators:
+            for pair in self.stage_two_clfs:
                 est_name = pair[0]
                 for key, value in self.params[i].items():
                     key_name = est_name+"__"+key
                     parameters[key_name] = value
                 i += 1
                 
-            majority_voting = VotingClassifier(estimators=estimators, voting="soft", weights=self.weights)
+            majority_voting = VotingClassifier(estimators=self.stage_two_clfs, voting="soft", weights=self.weights)
             grid = GridSearchCV(estimator=majority_voting, param_grid=parameters, cv=self.cv, scoring=self.scoring)
             grid.fit(self.__X, self.__y)
             print()
@@ -104,7 +103,7 @@ class StackingClassifier(BaseEstimator,ClassifierMixin):
         
         # first stage
         for clf in self.stage_one_clfs:
-            y_pred = clf.predict(X_test)
+            y_pred = clf[1].predict(X_test)
             y_pred  = np.reshape(y_pred,(len(y_pred),1))
             if self.use_append == True:
                 self.__X_test = np.hstack((self.__X_test,y_pred)) 
@@ -115,12 +114,8 @@ class StackingClassifier(BaseEstimator,ClassifierMixin):
             self.__X_test = np.array(temp).T[0]
         
         # second stage
-        est = []
-        for clf in self.stage_two_clfs:
-            est.append(("clf",clf))
-        majority_voting = VotingClassifier(estimators=est, voting="hard", weights=self.weights)
+        majority_voting = VotingClassifier(estimators=self.stage_two_clfs, voting="hard", weights=self.weights)
         y_out = majority_voting.predict(self.__X_test)
-        
         return y_out
     
     def predict_proba(self,X_test):
@@ -134,7 +129,7 @@ class StackingClassifier(BaseEstimator,ClassifierMixin):
         
         # first stage
         for clf in self.stage_one_clfs:
-            y_pred = clf.predict(X_test)
+            y_pred = clf[1].predict(X_test)
             y_pred  = np.reshape(y_pred,(len(y_pred),1))
             if self.use_append == True:
                 self.__X_test = np.hstack((self.__X_test,y_pred)) 
@@ -149,7 +144,7 @@ class StackingClassifier(BaseEstimator,ClassifierMixin):
         for i in range(self.n_runs):
             j = 0
             for clf in self.stage_two_clfs:
-                y_pred = clf.predict_proba(self.__X_test)  
+                y_pred = clf[1].predict_proba(self.__X_test)  
                 preds.append(self.weights[j] * y_pred)
                 j += 1
         # average predictions
@@ -157,7 +152,6 @@ class StackingClassifier(BaseEstimator,ClassifierMixin):
         for pred in preds:
             y_final += pred
         y_out = y_final/(np.array(self.weights).sum() * self.n_runs)
-        
         return y_out      
         
 class StackingRegressor(BaseEstimator,RegressorMixin):
@@ -194,20 +188,22 @@ class StackingRegressor(BaseEstimator,RegressorMixin):
             temp = []
         
         for clf in self.stage_one_clfs:
-            y_pred = cross_val_predict(clf, X, y, cv=5, n_jobs=1)
-            clf.fit(X,y)
+            y_pred = cross_val_predict(clf[1], X, y, cv=5, n_jobs=1)
+            clf[1].fit(X,y)
             y_pred  = np.reshape(y_pred,(len(y_pred),1))
             if self.use_append == True:
                 self.__X = np.hstack((self.__X,y_pred))
             elif self.use_append == False:
                 temp.append(y_pred)
+
+            score = mean_squared_error(self.__y,y_pred)
+            print("Score of %s: %0.3f" %(clf[0],score))
                 
         if self.use_append == False:
             self.__X = np.array(temp).T[0]
-        
         # fit the second stage models
         for clf in self.stage_two_clfs:
-            clf.fit(self.__X,self.__y)        
+            clf[1].fit(self.__X,self.__y)        
     
     def predict(self,X_test):
         '''
@@ -220,7 +216,7 @@ class StackingRegressor(BaseEstimator,RegressorMixin):
         
         # first stage
         for clf in self.stage_one_clfs:
-            y_pred = clf.predict(X_test)
+            y_pred = clf[1].predict(X_test)
             y_pred  = np.reshape(y_pred,(len(y_pred),1))
             if self.use_append == True:
                 self.__X_test = np.hstack((self.__X_test,y_pred)) 
@@ -235,7 +231,7 @@ class StackingRegressor(BaseEstimator,RegressorMixin):
         for i in range(self.n_runs):
             j = 0
             for clf in self.stage_two_clfs:
-                y_pred = clf.predict(self.__X_test)  
+                y_pred = clf[1].predict(self.__X_test)  
                 preds.append(self.weights[j] * y_pred)
                 j += 1
         # average predictions
@@ -243,5 +239,4 @@ class StackingRegressor(BaseEstimator,RegressorMixin):
         for pred in preds:
             y_final += pred
         y_final = y_final/(np.array(self.weights).sum() * self.n_runs)
-        
         return y_final

@@ -260,8 +260,17 @@ if __name__ == "__main__":
     clf6 = RandomForestClassifier(n_estimators=1000,max_features=10,max_depth=14,n_jobs=1) # feats = 10
     clf7 = GradientBoostingClassifier(n_estimators=100,max_depth=9, max_features=7)  # feats = 7
     
-    first_stage = [clf1,clf2,clf3,clf4,clf5]
-    second_stage = [clf7,clf6]
+    first_stage = [
+                   ("rf",clf1),
+                   ("knn",clf2),
+                   ("et",clf3),
+                   ("gnb",clf4),
+                   ("gbm",clf5)
+                   ]
+    second_stage = [
+                    ("gbm",clf7),
+                    ("rf",clf6)
+                     ]
     
     weights = [3,1]
     stack = StackingClassifier(stage_one_clfs=first_stage,stage_two_clfs=second_stage,weights=weights, n_runs=10, use_append=False)
