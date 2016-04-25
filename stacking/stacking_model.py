@@ -55,9 +55,9 @@ class StackingClassifier(BaseEstimator,ClassifierMixin):
             elif self.use_append == False:
                 temp.append(y_pred)
             if self.scoring == "log_loss":
-                score = accuracy_score(self.__y,y_pred)
-            else:
                 score = log_loss(self.__y,y_pred)
+            else:
+                score = accuracy_score(self.__y,y_pred)
             print("Score of %s: %0.3f" %(clf[0],score))
                 
         if self.use_append == False:

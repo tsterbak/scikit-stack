@@ -20,6 +20,7 @@ from sklearn.cross_validation import cross_val_score, StratifiedKFold,\
     train_test_split
 from sklearn.metrics import log_loss
 from sklearn.naive_bayes import GaussianNB
+from sklearn.pipeline import Pipeline
         
 def create_sub(y_pred):
     print("generating submission")
@@ -254,7 +255,9 @@ if __name__ == "__main__":
     clf1 = RandomForestClassifier(n_estimators=100,random_state=571,max_features=8,max_depth=13,n_jobs=1)
     clf2 = KNeighborsClassifier(n_neighbors=250, p=1, weights="distance")
     clf3 = ExtraTreesClassifier(n_estimators=100,max_depth=14, max_features=12,random_state=571,n_jobs=1)
-    clf4 = GaussianNB()
+    nb = GaussianNB()
+    rft = RandomForestClassifier(n_estimators=100,random_state=571,max_features=8,max_depth=13,n_jobs=1)
+    clf4 = Pipeline([('rft', rft), ('ng', nb)])
     clf5 = GradientBoostingClassifier(n_estimators=100,random_state=571,max_depth=6, max_features=7)
     
     clf6 = RandomForestClassifier(n_estimators=1000,max_features=10,max_depth=14,n_jobs=1) # feats = 10
@@ -264,7 +267,7 @@ if __name__ == "__main__":
                    ("rf",clf1),
                    ("knn",clf2),
                    ("et",clf3),
-                   ("gnb",clf4),
+                   ("rf_gnb",clf4),
                    ("gbm",clf5)
                    ]
     second_stage = [
@@ -292,12 +295,12 @@ if __name__ == "__main__":
     
     # gridsearch
     params1 = {
-               "max_depth": [2,3,4],
+               "max_depth": [3,4],
                "max_features": [3,4,5]
                }
     
     params2 = {
-               "max_depth": [6,7,8],
+               "max_depth": [7,8],
                "max_features": [4,5]
                }
     paramsset = [params1, params2]
