@@ -15,7 +15,7 @@ class StackingClassifier(BaseEstimator,ClassifierMixin):
     '''
     stacking ensemble classifier based on scikit-learn
     '''
-    def __init__(self,stage_one_clfs,stage_two_clfs,weights=None, n_runs=10, use_append=True, do_gridsearch=False, params=None, cv=5, scoring="accuracy"):
+    def __init__(self,stage_one_clfs,stage_two_clfs,weights=None, n_runs=10, use_append=True, do_gridsearch=False, params=None, cv=5, scoring="accuracy", print_scores=False):
         '''
         
         weights: weights of the stage_two_clfs
@@ -33,6 +33,7 @@ class StackingClassifier(BaseEstimator,ClassifierMixin):
         self.params = params
         self.cv = cv
         self.scoring = scoring
+        self.print_scores = print_scores
     
     def fit(self,X,y):
         '''
@@ -54,11 +55,10 @@ class StackingClassifier(BaseEstimator,ClassifierMixin):
                 self.__X = np.hstack((self.__X,y_pred))
             elif self.use_append == False:
                 temp.append(y_pred)
-            if self.scoring == "log_loss":
-                score = log_loss(self.__y,y_pred)
-            else:
+            
+            if self.print_scores == True:
                 score = accuracy_score(self.__y,y_pred)
-            print("Score of %s: %0.3f" %(clf[0],score))
+                print("Score of %s: %0.3f" %(clf[0],score))
                 
         if self.use_append == False:
             self.__X = np.array(temp).T[0]
@@ -158,7 +158,7 @@ class StackingRegressor(BaseEstimator,RegressorMixin):
     '''
     stacking ensemble regressor based on scikit-learn
     '''
-    def __init__(self,stage_one_clfs,stage_two_clfs,weights=None, n_runs=10, use_append=True, do_gridsearch=False, params=None, cv=5, scoring="mean_squared_error"):
+    def __init__(self,stage_one_clfs,stage_two_clfs,weights=None, n_runs=10, use_append=True, do_gridsearch=False, params=None, cv=5, scoring="mean_squared_error", print_scores=False):
         '''
         
         weights: weights of the stage_two_clfs
@@ -175,6 +175,7 @@ class StackingRegressor(BaseEstimator,RegressorMixin):
         self.params = params
         self.cv = cv
         self.scoring = scoring
+        self.print_scores = print_scores
         
     def fit(self,X,y):
         '''
@@ -195,9 +196,10 @@ class StackingRegressor(BaseEstimator,RegressorMixin):
                 self.__X = np.hstack((self.__X,y_pred))
             elif self.use_append == False:
                 temp.append(y_pred)
-
-            score = mean_squared_error(self.__y,y_pred)
-            print("Score of %s: %0.3f" %(clf[0],score))
+                
+            if self.print_scores == True:
+                score = mean_squared_error(self.__y,y_pred)
+                print("Score of %s: %0.3f" %(clf[0],score))
                 
         if self.use_append == False:
             self.__X = np.array(temp).T[0]

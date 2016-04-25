@@ -254,10 +254,8 @@ if __name__ == "__main__":
     print("build the model")
     clf1 = RandomForestClassifier(n_estimators=100,random_state=571,max_features=8,max_depth=13,n_jobs=1)
     clf2 = KNeighborsClassifier(n_neighbors=250, p=1, weights="distance")
-    clf3 = ExtraTreesClassifier(n_estimators=100,max_depth=14, max_features=12,random_state=571,n_jobs=1)
-    nb = GaussianNB()
-    rft = RandomForestClassifier(n_estimators=100,random_state=571,max_features=8,max_depth=13,n_jobs=1)
-    clf4 = Pipeline([('rft', rft), ('ng', nb)])
+    clf3 = ExtraTreesClassifier(n_estimators=200,max_depth=14, max_features=12,random_state=571,n_jobs=1)
+    clf4 = GaussianNB()
     clf5 = GradientBoostingClassifier(n_estimators=100,random_state=571,max_depth=6, max_features=7)
     
     clf6 = RandomForestClassifier(n_estimators=1000,max_features=10,max_depth=14,n_jobs=1) # feats = 10
@@ -267,7 +265,7 @@ if __name__ == "__main__":
                    ("rf",clf1),
                    ("knn",clf2),
                    ("et",clf3),
-                   ("rf_gnb",clf4),
+                   ("gnb",clf4),
                    ("gbm",clf5)
                    ]
     second_stage = [
@@ -276,7 +274,7 @@ if __name__ == "__main__":
                      ]
     
     weights = [3,1]
-    stack = StackingClassifier(stage_one_clfs=first_stage,stage_two_clfs=second_stage,weights=weights, n_runs=10, use_append=False)
+    stack = StackingClassifier(stage_one_clfs=first_stage,stage_two_clfs=second_stage,weights=weights, n_runs=10, use_append=False, print_scores=True)
     
     skf = StratifiedKFold(y, n_folds=5,random_state=571)
     
@@ -295,16 +293,14 @@ if __name__ == "__main__":
     
     # gridsearch
     params1 = {
-               "max_depth": [3,4],
-               "max_features": [3,4,5]
+               "max_depth": [4],
+               "max_features": [3]
                }
-    
     params2 = {
-               "max_depth": [7,8],
-               "max_features": [4,5]
+               "max_depth": [7],
+               "max_features": [4]
                }
     paramsset = [params1, params2]
-    
     stack = StackingClassifier(stage_one_clfs=first_stage,stage_two_clfs=second_stage,weights=weights, n_runs=10, use_append=False,
-                               do_gridsearch=True, params=paramsset, cv=skf, scoring="log_loss")
+                               do_gridsearch=True, params=paramsset, cv=skf, scoring="log_loss", print_scores=False)
     stack.fit(X,y)
