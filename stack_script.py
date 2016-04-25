@@ -4,7 +4,7 @@ Created on 14.04.2016
 @author: Tobias
 '''
 import sklearn_helpers as skhelper
-from stacking.stacking_model import StackingClassifier
+from stacking.stacking_model import *
 
 import pandas as pd
 import numpy as np
@@ -19,6 +19,7 @@ from sklearn.ensemble.gradient_boosting import GradientBoostingClassifier
 from sklearn.cross_validation import cross_val_score, StratifiedKFold,\
     train_test_split
 from sklearn.metrics import log_loss
+from sklearn.naive_bayes import GaussianNB
         
 def create_sub(y_pred):
     print("generating submission")
@@ -247,6 +248,8 @@ if __name__ == "__main__":
     X_test = df_test.values
     feature_names = df_all.columns.values.tolist()
     
+    print(X.shape)
+    
     print("build the model")
     clf1 = RandomForestClassifier(n_estimators=100,random_state=571,max_features=8,max_depth=13,n_jobs=1)
     clf2 = KNeighborsClassifier(n_neighbors=250, p=1, weights="distance")
@@ -254,15 +257,16 @@ if __name__ == "__main__":
     clf4 = GaussianNB()
     clf5 = GradientBoostingClassifier(n_estimators=100,random_state=571,max_depth=6, max_features=7)
     
-    clf6 = RandomForestClassifier(n_estimators=1000,max_features=8,max_depth=13,n_jobs=1)
-    clf7 = GradientBoostingClassifier(n_estimators=100,max_depth=6, max_features=7)
+    clf6 = RandomForestClassifier(n_estimators=1000,max_features=10,max_depth=14,n_jobs=1) # feats = 10
+    clf7 = GradientBoostingClassifier(n_estimators=100,max_depth=9, max_features=7)  # feats = 7
     
-    first_stage = [clf1,clf2,clf3,clf5]
-    second_stage = [clf6,clf7]
+    first_stage = [clf1,clf2,clf3,clf4,clf5]
+    second_stage = [clf7,clf6]
     
-    weights = [1,2]
-    stack = StackingClassifier(stage_one_clfs=first_stage,stage_two_clfs=second_stage,weights=None, n_runs=10)
+    weights = [3,1]
+    stack = StackingClassifier(stage_one_clfs=first_stage,stage_two_clfs=second_stage,weights=weights, n_runs=10, use_append=False)
     
+    skf = StratifiedKFold(y, n_folds=5,random_state=571)
     
 #     print("Training")
 #     stack.fit(X,y)
@@ -270,8 +274,25 @@ if __name__ == "__main__":
 #     y_pred = stack.predict_proba(X_test)
 #     create_sub(y_pred)
     
-    print("CV")
-    skf = StratifiedKFold(y, n_folds=5,random_state=571)
-    scores = cross_val_score(stack,X,y,scoring="log_loss",cv=skf)
-    print(scores)
-    print("CV-Score: %.3f" % -scores.mean())
+#     print("CV")
+#     scores = cross_val_score(stack,X,y,scoring="log_loss",cv=skf)
+#     print(scores)
+#     print("CV-Score: %.3f" % -scores.mean())
+    # with append:        Score: 0.783
+    # without append:     CV-Score: 0.846
+    
+    # gridsearch
+    params1 = {
+               "max_depth": [3,5,7],
+               "max_features": [4,5,6]
+               }
+    
+    params2 = {
+               "max_depth": [5,7,9],
+               "max_features": [4,6,8]
+               }
+    paramsset = [params1, params2]
+    
+    stack = StackingClassifier(stage_one_clfs=first_stage,stage_two_clfs=second_stage,weights=weights, n_runs=10, use_append=False,
+                               do_gridsearch=True, params=paramsset, cv=skf, scoring="log_loss")
+    stack.fit(X,y)
