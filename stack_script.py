@@ -279,17 +279,17 @@ if __name__ == "__main__":
 #     print(scores)
 #     print("CV-Score: %.3f" % -scores.mean())
     # with append:        Score: 0.783
-    # without append:     CV-Score: 0.846
+    # without append:     CV-Score: 0.843
     
     # gridsearch
     params1 = {
-               "max_depth": [3,5,7],
-               "max_features": [4,5,6]
+               "max_depth": [2,3,4],
+               "max_features": [3,4,5]
                }
     
     params2 = {
-               "max_depth": [5,7,9],
-               "max_features": [4,6,8]
+               "max_depth": [6,7,8],
+               "max_features": [4,5]
                }
     paramsset = [params1, params2]
     

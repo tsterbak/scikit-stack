@@ -62,7 +62,7 @@ class StackingClassifier(BaseEstimator,ClassifierMixin):
             for clf in self.stage_two_clfs:
                 clf.fit(self.__X,self.__y)      
                 
-        ### FOR GIRDSEARCH ###  
+        ### FOR GRIDSEARCH ###  
         else:
             print("GridSearch")
             #build paramteres and estimator set
@@ -164,7 +164,7 @@ class StackingRegressor(BaseEstimator,RegressorMixin):
     '''
     stacking ensemble regressor based on scikit-learn
     '''
-    def __init__(self,stage_one_clfs,stage_two_clfs,weights=None, n_runs=10):
+    def __init__(self,stage_one_clfs,stage_two_clfs,weights=None, n_runs=10, use_append=True, do_gridsearch=False, params=None, cv=5, scoring="mean_squared_error"):
         '''
         
         weights: weights of the stage_two_clfs
@@ -177,20 +177,33 @@ class StackingRegressor(BaseEstimator,RegressorMixin):
         else:
             self.weights = weights
         self.n_runs = n_runs
+        self.do_gridsearch = do_gridsearch
+        self.params = params
+        self.cv = cv
+        self.scoring = scoring
         
     def fit(self,X,y):
         '''
         fit the model
         '''
-        self.__X = X
-        self.__y = y
+        if self.use_append == True:
+            self.__X = X
+            self.__y = y
+        elif self.use_append == False:
+            self.__y = y
+            temp = []
         
-        # fit the first stage models
         for clf in self.stage_one_clfs:
             y_pred = cross_val_predict(clf, X, y, cv=5, n_jobs=1)
             clf.fit(X,y)
             y_pred  = np.reshape(y_pred,(len(y_pred),1))
-            self.__X = np.hstack((self.__X,y_pred)) 
+            if self.use_append == True:
+                self.__X = np.hstack((self.__X,y_pred))
+            elif self.use_append == False:
+                temp.append(y_pred)
+                
+        if self.use_append == False:
+            self.__X = np.array(temp).T[0]
         
         # fit the second stage models
         for clf in self.stage_two_clfs:
@@ -200,13 +213,22 @@ class StackingRegressor(BaseEstimator,RegressorMixin):
         '''
         Predict the value for each sample
         '''
-        self.__X_test = X_test
+        if self.use_append == True:
+            self.__X_test = X_test
+        elif self.use_append == False:
+            temp = []
         
         # first stage
         for clf in self.stage_one_clfs:
             y_pred = clf.predict(X_test)
             y_pred  = np.reshape(y_pred,(len(y_pred),1))
-            self.X_test = np.hstack((self.__X_test,y_pred)) 
+            if self.use_append == True:
+                self.__X_test = np.hstack((self.__X_test,y_pred)) 
+            elif self.use_append == False:
+                temp.append(y_pred)
+        
+        if self.use_append == False:
+            self.__X_test = np.array(temp).T[0]
             
         # second stage
         preds = []
